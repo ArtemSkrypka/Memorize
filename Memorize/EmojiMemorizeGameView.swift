@@ -7,93 +7,62 @@
 
 import SwiftUI
 struct EmojiMemorizeGameView: View {
-    @State var emojis: [String] = []
-    @State var appColor: Color = .orange
-    var gadgetTheme: [String] = ["⌚️","📱","💻","📺","📼","📀","🖨️","🎥","⌚️","📱","💻","📺","📼","📀","🖨️","🎥"]
-    var animalTheme: [String] = ["🐶","🐱","🐼","🐽","🐸", "🐶","🐱","🐼","🐽","🐸", "🦁", "🦁"]
-    var foodTheme: [String] = ["🍎","🥐","🥗","🍔","🍮","🍙","🍱","🍎","🥐","🥗","🍔","🍮","🍙","🍱"]
+    @ObservedObject var viewModel: EmojiMemorizeGame
     var body: some View {
         VStack{
-            Text("Memorize!").font(/*@START_MENU_TOKEN@*/.title/*@END_MENU_TOKEN@*/)
-            cards
-            Spacer()
-            themeChooseAdjust
-            
+            ScrollView{
+                cards
+                    .animation(.default, value: viewModel.cards)
+            }
+            Button(action: viewModel.shuffle, label: {
+                Text("Suffle")
+            })
         }
         .padding()
     }
     
     var cards: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 120))]){
-            ForEach( 0..<emojis.count, id: \.self) { index in
-                CardView(content: emojis[index], cardColor: $appColor)
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 85), spacing: 0)], spacing: 0){
+            ForEach(viewModel.cards) { card in
+                CardView(card)
+                    .aspectRatio(2/3, contentMode: .fit)
+                    .padding(4)
+                    .onTapGesture {
+                        viewModel.choose(card)
+                    }
             }
-        }
-    }
-    
-    var animalThemeBtn: some View {
-        themeChooserAdjuster(symbol: "hare.circle.fill", text: "Animals", theme: animalTheme, openCardColor: .green)
-    }
-    
-    var foodThemeBtn: some View {
-        themeChooserAdjuster(symbol: "fork.knife.circle.fill", text: "Food", theme: foodTheme, openCardColor: .orange)
-    }
-    
-    var gadgetThemeBtn: some View {
-        themeChooserAdjuster(symbol: "iphone.gen1.circle.fill", text: "Gadgets", theme: gadgetTheme, openCardColor: .blue)
-    }
-    
-    func themeChanger(to theme: [String], openCardColor color: Color) -> Void {
-        emojis = theme.shuffled()
-        appColor = color
-    }
-    
-    func themeChooserAdjuster(symbol: String, text: String, theme: [String], openCardColor: Color) -> some View {
-        Button(action: {
-           themeChanger(to: theme, openCardColor: openCardColor)
-        }, label: {
-            VStack{
-                Image(systemName: symbol).font(.title).imageScale(.large)
-                Text(text).font(.caption)
-            }
-        }).padding()
-    }
-    
-    var themeChooseAdjust: some View {
-        HStack{
-            animalThemeBtn
-            foodThemeBtn
-            gadgetThemeBtn
         }
     }
 }
 
 
 struct CardView: View {
-    let content: String
-    @Binding var cardColor: Color
-    @State var isFaceUp = false
+    let card: MemorizeGame<String>.Card
+    
+    init(_ card: MemorizeGame<String>.Card) {
+        self.card = card
+    }
     
     var body: some View {
         ZStack{
             let baseRectangle: RoundedRectangle = RoundedRectangle(cornerRadius: 10)
                       
             Group{
-                baseRectangle.fill(cardColor)
+                baseRectangle.fill(.white)
                 baseRectangle.strokeBorder(lineWidth: 2)
-                Text(content).font(.largeTitle)
+                Text(card.content).font(.system(size: 200))
+                    .minimumScaleFactor(0.01)
+                    .aspectRatio(1, contentMode: .fit)
             }
-            .opacity(isFaceUp ? 1 : 0)
-            baseRectangle.fill(cardColor).opacity(isFaceUp ? 0 : 1)
-            
-            
-        }.onTapGesture {
-            isFaceUp.toggle()
+            .opacity(card.isFaceUp ? 1 : 0)
+            baseRectangle.fill(.orange).opacity(card.isFaceUp ? 0 : 1)
         }
+        .opacity(card.isMatched ? 0 : 1)
+        
     }
 }
 
 
 #Preview {
-    EmojiMemorizeGameView(appColor: .orange)
+    EmojiMemorizeGameView(viewModel: EmojiMemorizeGame())
 }
